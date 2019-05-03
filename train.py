@@ -22,15 +22,19 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='TA Knowledge Distillation Code')
     parser.add_argument('--epochs', default=160, type=int,  help='number of total epochs to run')
     parser.add_argument('--dataset', default='cifar10', type=str, help='dataset. can be either cifar10 or cifar100')
-    parser.add_argument('--batch-size', default=128, type=int, help='batch_size')
+    parser.add_argument('--batch-size', default=128, type=int,  help='batch_size')
     parser.add_argument('--learning-rate', default=0.1, type=float, help='initial learning rate')
     parser.add_argument('--gamma', type=float, default=0.1, help='learning rate decay factor for step decay')
     parser.add_argument('--milestones', type=int, nargs='+', default=[80, 120],
                         help='list of epochs to decay lr(Multistep)')
     parser.add_argument('--momentum', default=0.9, type=float,  help='SGD momentum')
-    parser.add_argument('--weight-decay', default=1e-4, type=float, help='SGD weight decay (default: 1e-4)')
+    parser.add_argument('--weight_decay', default=1e-4, type=float, help='SGD weight decay (default: 1e-4)')
     parser.add_argument('--teacher', default='', type=str, help='teacher student name')
     parser.add_argument('--student', '--model', default='resnet8', type=str, help='teacher student name')
+
+    parser.add_argument('--lambda_student', default=0.5, type=float,  help='lambda for distillation')
+    parser.add_argument('--T_student', default=0.5, type=float,  help='lambda for distillation')
+
     parser.add_argument('--teacher-checkpoint', default='', type=str, help='optinal pretrained checkpoint for teacher')
     parser.add_argument('--cuda', default=True, type=str2bool, help='whether or not use cuda(train on GPU)')
     parser.add_argument('--dataset-dir', default='./data/CIFAR', type=str,  help='dataset directory')
@@ -61,10 +65,9 @@ class TrainManager(object):
                                    lr=train_config['learning_rate'],
                                    momentum=train_config['momentum'],
                                    weight_decay=train_config['weight_decay'])
-        '''
         self.scheduler = lrs.MultiStepLR(self.optimizer,
-                                            milestones=train_config['milestones'],
-                                            gamma=train_config['gamma'])'''
+                                         milestones=train_config['milestones'],
+                                         gamma=train_config['gamma'])
         if self.have_teacher:
             self.teacher.eval()
             self.teacher.train(mode=False)
@@ -86,6 +89,7 @@ class TrainManager(object):
         for epoch in range(epochs):
 
             self.student.train()
+            #self.scheduler.step()
             self.adjust_learning_rate(self.optimizer, epoch)
             loss = 0
             for batch_idx, (data, target) in enumerate(self.train_loader):
@@ -183,15 +187,15 @@ if __name__ == "__main__":
     teacher_model = None
     student_model = create_cnn_model(args.student, dataset, use_cuda=args.cuda)
     train_config = {
-        'epochs': args.epochs,
-        'learning_rate': args.learning_rate,
+        'epochs': config['epochs'],
+        'learning_rate': config['lr'],
         'momentum': args.momentum,
         'weight_decay': args.weight_decay,
         'device': 'cuda' if args.cuda else 'cpu',
         'is_plane': not is_resnet(args.student),
         'trial_id': trial_id,
-        'T_student': config.get('T_student'),
-        'lambda_student': config.get('lambda_student'),
+        'T_student': args.T_student,
+        'lambda_student': args.lambda_student,
         'milestones': args.milestones,
         'gamma': args.gamma
     }

@@ -1,4 +1,4 @@
-{ "lambda_student":{"_type":"quniform", "_value":[0.05, 1.0, 0.05]},
-  "T_student":{"_type":"choice", "_value":[1]},
+{ "epochs":{"_type":"choice", "_value":[120, 160, 200]},
+  "lr":{"_type":"choice", "_value":[0.2, 0.1, 0.05, 0.02, 0.01]},
   "seed":{"_type":"choice", "_value":[20, 31, 55, 1, 40, 89]}
 }
