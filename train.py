@@ -19,8 +19,8 @@ def str2bool(v):
 	
 def parse_arguments():
 	parser = argparse.ArgumentParser(description='TA Knowledge Distillation Code')
-	parser.add_argument('--epochs', default=200, type=int,  help='number of total epochs to run')
-	parser.add_argument('--dataset', default='cifar100', type=str, help='dataset. can be either cifar10 or cifar100')
+	parser.add_argument('--epochs', default=80, type=int,  help='number of total epochs to run')
+	parser.add_argument('--dataset', default='cifar10', type=str, help='dataset. can be either cifar10 or cifar100')
 	parser.add_argument('--batch-size', default=128, type=int, help='batch_size')
 	parser.add_argument('--learning-rate', default=0.1, type=float, help='initial learning rate')
 	parser.add_argument('--momentum', default=0.9, type=float,  help='SGD momentum')
@@ -28,8 +28,8 @@ def parse_arguments():
 	parser.add_argument('--teacher', default='', type=str, help='teacher student name')
 	parser.add_argument('--student', '--model', default='resnet8', type=str, help='teacher student name')
 	parser.add_argument('--teacher-checkpoint', default='', type=str, help='optinal pretrained checkpoint for teacher')
-	parser.add_argument('--cuda', default=False, type=str2bool, help='whether or not use cuda(train on GPU)')
-	parser.add_argument('--dataset-dir', default='./data', type=str,  help='dataset directory')
+	parser.add_argument('--cuda', default=True, type=str2bool, help='whether or not use cuda(train on GPU)')
+	parser.add_argument('--dataset-dir', default='./data/CIFAR', type=str,  help='dataset directory')
 	args = parser.parse_args()
 	return args
 

@@ -29,7 +29,7 @@ def get_cifar(num_classes=100, dataset_dir='./data', batch_size=128, crop=False)
 	if num_classes == 100:
 		trainset = torchvision.datasets.CIFAR100(root=dataset_dir, train=True,
 												 download=True, transform=train_transform)
-		
+
 		testset = torchvision.datasets.CIFAR100(root=dataset_dir, train=False,
 												download=True, transform=simple_transform)
 	else:

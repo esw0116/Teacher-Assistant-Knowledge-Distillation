@@ -1,8 +1,8 @@
 authorName: Anonymous
-experimentName: TAKD
+experimentName: NOKD-Resnet8
 trialConcurrency: 1
-maxExecDuration: 48h
-maxTrialNum: 1
+maxExecDuration: 60h
+maxTrialNum: 100
 
 #choice: local, remote, pai
 trainingServicePlatform: local
@@ -17,6 +17,6 @@ tuner:
     #choice: maximize, minimize
     optimize_mode: maximize
 trial:
-  command: python3 train.py --epochs 160 --teacher resnet110 --student resnet8 --cuda 1
+  command: python3 train.py --epochs 80 --student resnet8 --cuda 1 --batch-size 32
   codeDir: .
   gpuNum: 1
