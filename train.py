@@ -23,9 +23,9 @@ def parse_arguments():
     parser.add_argument('--epochs', default=160, type=int,  help='number of total epochs to run')
     parser.add_argument('--dataset', default='cifar10', type=str, help='dataset. can be either cifar10 or cifar100')
     parser.add_argument('--batch-size', default=128, type=int,  help='batch_size')
-    parser.add_argument('--learning-rate', default=0.1, type=float, help='initial learning rate')
+    parser.add_argument('--learning_rate', default=0.1, type=float, help='initial learning rate')
     parser.add_argument('--gamma', type=float, default=0.1, help='learning rate decay factor for step decay')
-    parser.add_argument('--milestones', type=int, nargs='+', default=[80, 120],
+    parser.add_argument('--milestones', type=int, nargs='+', default=[160, 240],
                         help='list of epochs to decay lr(Multistep)')
     parser.add_argument('--momentum', default=0.9, type=float,  help='SGD momentum')
     parser.add_argument('--weight_decay', default=1e-4, type=float, help='SGD weight decay (default: 1e-4)')
@@ -37,7 +37,7 @@ def parse_arguments():
 
     parser.add_argument('--teacher-checkpoint', default='', type=str, help='optinal pretrained checkpoint for teacher')
     parser.add_argument('--cuda', default=True, type=str2bool, help='whether or not use cuda(train on GPU)')
-    parser.add_argument('--dataset-dir', default='./data/CIFAR', type=str,  help='dataset directory')
+    parser.add_argument('--dataset_dir', default='./data/CIFAR', type=str,  help='dataset directory')
     args = parser.parse_args()
     return args
 
@@ -89,8 +89,7 @@ class TrainManager(object):
         for epoch in range(epochs):
 
             self.student.train()
-            #self.scheduler.step()
-            self.adjust_learning_rate(self.optimizer, epoch)
+            lr = self.adjust_learning_rate(self.optimizer, epoch, self.config['learning_rate'])
             loss = 0
             for batch_idx, (data, target) in enumerate(self.train_loader):
                 iteration += 1
@@ -112,11 +111,11 @@ class TrainManager(object):
                 loss.backward()
                 self.optimizer.step()
 
-            print("epoch {}/{}".format(epoch, epochs))
             val_acc = self.validate(step=epoch)
+            print("epoch {}/{},\t lr:{:.2f}".format(epoch, epochs, lr))
             if val_acc > best_acc:
                 best_acc = val_acc
-                self.save(epoch, name='{}_{}_best.pth.tar'.format(self.name, trial_id))
+                self.save(epoch, name='model_params/{}_{}_best.pth.tar'.format(self.name, trial_id))
 
         return best_acc
 
@@ -146,7 +145,7 @@ class TrainManager(object):
                 'epoch': epoch,
                 'model_state_dict': self.student.state_dict(),
                 'optimizer_state_dict': self.optimizer.state_dict(),
-            }, '{}_{}_epoch{}.pth.tar'.format(self.name, trial_id, epoch))
+            }, 'model_params/{}_{}_epoch{}.pth.tar'.format(self.name, trial_id, epoch))
         else:
             torch.save({
                 'model_state_dict': self.student.state_dict(),
@@ -154,7 +153,7 @@ class TrainManager(object):
                 'epoch': epoch,
             }, name)
 
-    def adjust_learning_rate(self, optimizer, epoch):
+    def adjust_learning_rate(self, optimizer, epoch, initial_lr):
         epochs = self.config['epochs']
         models_are_plane = self.config['is_plane']
 
@@ -162,16 +161,20 @@ class TrainManager(object):
         if models_are_plane:
             lr = 0.01
         else:
-            if epoch < int(epoch/2.0):
-                lr = 0.1
+            if epoch < 2:
+                lr = 0.01
+            elif epoch < int(epoch/2.0):
+                lr = initial_lr
             elif epoch < int(epochs*3/4.0):
-                lr = 0.1 * 0.1
+                lr = initial_lr * 0.1
             else:
-                lr = 0.1 * 0.01
+                lr = initial_lr * 0.01
 
         # update optimizer's learning rate
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
+
+        return lr
 
 
 if __name__ == "__main__":
@@ -187,8 +190,8 @@ if __name__ == "__main__":
     teacher_model = None
     student_model = create_cnn_model(args.student, dataset, use_cuda=args.cuda)
     train_config = {
-        'epochs': config['epochs'],
-        'learning_rate': config['lr'],
+        'epochs': args.epochs,
+        'learning_rate': args.learning_rate,
         'momentum': args.momentum,
         'weight_decay': args.weight_decay,
         'device': 'cuda' if args.cuda else 'cpu',
@@ -210,7 +213,7 @@ if __name__ == "__main__":
             teacher_model = load_checkpoint(teacher_model, args.teacher_checkpoint)
         else:
             print("---------- Training Teacher -------")
-            train_loader, test_loader = get_cifar(num_classes)
+            train_loader, test_loader = get_cifar(num_classes, args.dataset_dir, args.batch_size, True)
             teacher_train_config = copy.deepcopy(train_config)
             teacher_name = '{}_{}_best.pth.tar'.format(args.teacher, trial_id)
             teacher_train_config['name'] = args.teacher
@@ -221,7 +224,7 @@ if __name__ == "__main__":
     # Student training
     print("---------- Training Student -------")
     student_train_config = copy.deepcopy(train_config)
-    train_loader, test_loader = get_cifar(num_classes)
+    train_loader, test_loader = get_cifar(num_classes, args.dataset_dir, args.batch_size, True)
     student_train_config['name'] = args.student
     student_trainer = TrainManager(student_model, teacher=teacher_model, train_loader=train_loader, test_loader=test_loader, train_config=student_train_config)
     best_student_acc = student_trainer.train()

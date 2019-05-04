@@ -17,6 +17,6 @@ tuner:
     #choice: maximize, minimize
     optimize_mode: maximize
 trial:
-  command: python3 train.py --epochs 160 --student resnet14 --cuda True --batch-size 128
+  command: python3 train.py --epochs 320 --student resnet110 --cuda True --batch-size 256 --learning_rate 0.1
   codeDir: .
   gpuNum: 1
